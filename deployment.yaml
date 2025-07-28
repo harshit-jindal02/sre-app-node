@@ -7,8 +7,8 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: 6000
-      targetPort: 6000
+    - port: 6002
+      targetPort: 6002
   selector:
     app: node-app
 ---
@@ -33,7 +33,7 @@ spec:
           image: node-app # Assumes you have built an image with this name
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 6000
+            - containerPort: 6002
           env:
             # These values point to the Kubernetes Service for the Spring Boot app
             - name: SPRING_SERVICE_HOST
