@@ -1,0 +1,59 @@
+name: Deploy Node app
+
+on:
+  workflow_dispatch:
+    inputs:
+      enable-trace-assist:
+        description: 'Enable OpenTelemetry trace assist?'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Remove old repo (if exists)
+        run: |
+          sudo rm -rf /opt/sample-node
+
+      - name: Clone repository
+        env:
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          git clone https://Deloitte-US:${PAT_TOKEN}@github.com/Deloitte-US/SRE-application-node.git /opt/sample-node
+          eval "$(minikube docker-env)"
+
+      - name: Build Docker image
+        run: |
+          cd /opt/sample-node
+          eval "$(minikube docker-env)"
+          docker build -t sample-node .
+
+      - name: Apply k8s (with trace assist logic)
+        env:
+          ENABLE_TRACE_ASSIST: ${{ github.event.inputs.enable-trace-assist }}
+        run: |
+          set -e
+          cd /opt/sample-node
+
+          kubectl apply -f rabbit.yaml
+
+          # If ENABLE_TRACE_ASSIST is true, add annotations
+          if [ "$ENABLE_TRACE_ASSIST" = "true" ]; then
+            yq eval '.spec.template.metadata.annotations."instrumentation.opentelemetry.io/inject" = "true" |
+                     .spec.template.metadata.annotations."instrumentation.opentelemetry.io/inject-nodejs" = "true"' \
+                     deployment.yaml > deployment-temp.yaml
+            kubectl apply -f deployment-temp.yaml
+          else
+            # Remove the annotations if they exist
+            yq eval 'del(.spec.template.metadata.annotations."instrumentation.opentelemetry.io/inject") |
+                     del(.spec.template.metadata.annotations."instrumentation.opentelemetry.io/inject-nodejs")' \
+                     deployment.yaml > deployment-temp.yaml
+            kubectl apply -f deployment-temp.yaml
+          fi
+          kubectl apply -f service.yaml
