@@ -58,14 +58,15 @@ app.post('/receive', upload.single('csvfile'), async (req, res) => {
             springServiceStatus: response.status 
         });
     } catch (err) {
-        console.error('Error processing file:', err.message);
-        res.status(500).json({ error: 'Error processing file.', details: err.message });
+        // Improved error logging
+        console.error('Error processing file:', err.response ? err.response.data : err.message);
+        res.status(500).json({ error: 'Error processing file.', details: err.response ? err.response.data : err.message });
     }
 });
 
 app.get('/view', (req, res) => {
     if (!fs.existsSync(XML_FILE)) {
-        return res.status(404).send('No XML file found.');
+        return res.status(404).send('No XML file found. Please upload a CSV through the Python app first.');
     }
     const xmlContent = fs.readFileSync(XML_FILE, 'utf-8');
     res.type('application/xml').send(xmlContent);
