@@ -10,30 +10,30 @@ spec:
   - port: 6002
     targetPort: 6002
   selector:
-    app: node-pub
+    app: nodejs-pub
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: node-pub-deployment
+  name: nodejs-pub-deployment
   labels:
-    app: node-pub
+    app: nodejs-pub
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: node-pub
+      app: nodejs-pub
   template:
     metadata:
       labels:
-        app: node-pub
+        app: nodejs-pub
       annotations:
         instrumentation.opentelemetry.io/inject: 'true'
         instrumentation.opentelemetry.io/inject-nodejs: 'true'
     spec:
       containers:
       - name: node-app
-        image: user-app-node-pub:latest
+        image: user-app-nodejs-pub:latest
         imagePullPolicy: Never
         ports:
         - containerPort: 6002
